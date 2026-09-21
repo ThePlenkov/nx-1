@@ -1,4 +1,4 @@
-import { addProjectConfiguration, type Tree } from '@nx/devkit';
+import { addProjectConfiguration, updateNxJson, type Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { cypressProjectConfigs } from './migrations';
 
@@ -61,6 +61,28 @@ describe('cypressProjectConfigs', () => {
     expect(await collectConfigPaths(tree)).toEqual([
       'apps/app/cypress.config.ts',
       'apps/app/cypress.ci.config.ts',
+    ]);
+  });
+
+  it('should read the config path inherited from target defaults', async () => {
+    updateNxJson(tree, {
+      targetDefaults: {
+        '@nx/cypress:cypress': [
+          {
+            filter: { projects: ['tag:ct'] },
+            options: { cypressConfig: '{projectRoot}/cypress.ct.config.ts' },
+          },
+        ],
+      },
+    });
+    addProjectConfiguration(tree, 'app', {
+      root: 'apps/app',
+      tags: ['ct'],
+      targets: { 'component-test': { executor: '@nx/cypress:cypress' } },
+    });
+
+    expect(await collectConfigPaths(tree)).toEqual([
+      'apps/app/cypress.ct.config.ts',
     ]);
   });
 
